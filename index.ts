@@ -33,4 +33,20 @@ for (const folder of commandFolders) {
   }
 }
 
+const eventsPath = path.join(__dirname, 'events') //dittoish for events.
+const eventFiles = fs
+  .readdirSync(eventsPath)
+  .filter((file) => file.endsWith('.js'))
+
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file)
+  const event = require(filePath)
+  if (event.once) {
+    //Client extends EventEmitter and exposes .on() and .once(), these are used to register event listners.
+    client.once(event.name, (...args) => event.execute(...args))
+  } else {
+    client.on(event.name, (...args) => event.execute(...args))
+  }
+}
+
 client.login(token)
