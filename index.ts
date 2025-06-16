@@ -33,35 +33,20 @@ for (const folder of commandFolders) {
   }
 }
 
-client.once(Events.ClientReady, (readyClient) => {
-  console.log(`Ready! Logged in as ${readyClient.user.tag}`)
-})
+const eventsPath = path.join(__dirname, 'events') //dittoish for events.
+const eventFiles = fs
+  .readdirSync(eventsPath)
+  .filter((file) => file.endsWith('.js'))
 
-client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return //makes sure only slash commands are run
-  const command = interaction.client.commands.get(interaction.commandName)
-
-  if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`)
-    return
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file)
+  const event = require(filePath)
+  if (event.once) {
+    //Client extends EventEmitter and exposes .on() and .once(), these are used to register event listners.
+    client.once(event.name, (...args) => event.execute(...args))
+  } else {
+    client.on(event.name, (...args) => event.execute(...args))
   }
-
-  try {
-    await command.execute(interaction)
-  } catch (error) {
-    console.error(error)
-    if (interaction.replied || interaction.deferred) {
-      await interaction.followUp({
-        content: 'There was an error while executing this command!',
-        flags: MessageFlags.Ephemeral,
-      })
-    } else {
-      await interaction.reply({
-        content: 'There was an error while executing this command!',
-        flags: MessageFlags.Ephemeral,
-      })
-    }
-  }
-})
+}
 
 client.login(token)
